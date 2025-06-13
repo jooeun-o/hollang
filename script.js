@@ -1,7 +1,9 @@
 let players = [];
 let runners = [];
+let positions = [];
+let speeds = [];
 let finishOrder = [];
-let obstacles = [];
+let isFinished = [];
 
 document.getElementById("addBtn").addEventListener("click", addPlayer);
 document.getElementById("startBtn").addEventListener("click", startGame);
@@ -23,46 +25,11 @@ function renderPlayers() {
     const div = document.createElement("div");
     div.className = "runner";
     div.style.top = `${index * 80 + 20}px`;
-
-    const img = document.createElement("img");
-    const imgNum = index % 2 === 0 ? 1 : 2;
-    img.src = `assets/runner${imgNum}.png`;
-
-    img.onerror = () => {
-      div.innerHTML = player.name.slice(0, 3);  // 한글 최대 3글자까지 출력
-      div.style.backgroundColor = (index % 2 === 0) ? '#ff6f61' : '#4fc3f7';
-    };
-
-    div.appendChild(img);
+    div.innerText = player.name.slice(0, 3);
+    div.style.backgroundColor = (index % 2 === 0) ? '#ff6f61' : '#4fc3f7';
     track.appendChild(div);
     runners[index] = div;
   });
-}
-
-function spawnObstacles() {
-  obstacles = [];
-  const track = document.getElementById("track");
-  for (let i = 0; i < 7; i++) {
-    const x = 150 + Math.random() * 600;
-    const y = 20 + i * 50;
-    const obs = document.createElement("div");
-    obs.className = "obstacle";
-    obs.style.left = `${x}px`;
-    obs.style.top = `${y}px`;
-
-    const img = document.createElement("img");
-    img.src = "assets/obstacle.png";
-    img.onerror = () => {
-      obs.style.backgroundColor = '#333';
-      obs.style.borderRadius = '50%';
-    };
-    img.style.width = '100%';
-    img.style.height = '100%';
-    obs.appendChild(img);
-
-    track.appendChild(obs);
-    obstacles.push({ x, y });
-  }
 }
 
 function startGame() {
@@ -73,74 +40,70 @@ function startGame() {
 
   document.getElementById("winner").innerText = "";
   renderPlayers();
-  spawnObstacles();
+
+  const totalPlayers = players.length;
+  positions = new Array(totalPlayers).fill(0);
+  speeds = new Array(totalPlayers).fill(1);
+  isFinished = new Array(totalPlayers).fill(false);
   finishOrder = [];
 
-  const shuffled = shuffle([...players]);
+  requestAnimationFrame(update);
+}
 
-  shuffled.forEach((player, i) => {
-    const runner = runners[players.findIndex(p => p.name === player.name)];
-    const delay = 30000 + i * 1000 + Math.random() * 3000;
-    const duration = delay;
+function update() {
+  const endX = 840;
+  const trackWidth = 840;
 
-    const startTime = performance.now();
-    const startX = 0;
-    const endX = 840;
-    const laneY = parseInt(runner.style.top);
+  // 속도 랜덤 가감 (가속, 감속)
+  players.forEach((_, i) => {
+    if (!isFinished[i]) {
+      speeds[i] += (Math.random() * 0.1 - 0.05);
+      speeds[i] = Math.min(Math.max(speeds[i], 0.5), 2.5);
+    }
+  });
 
-    let position = 0;
-
-    function animate(currentTime) {
-      const elapsed = currentTime - startTime;
-      let progress = Math.min(elapsed / duration, 1);
-      position = startX + (endX * progress);
-
-      // 장애물 충돌 튕김
-      obstacles.forEach(obs => {
-        if (Math.abs(position - obs.x) < 25 && Math.abs(laneY - obs.y) < 30) {
-          position += (Math.random() * 30 - 15);
+  // 충돌 판정 (플레이어 간 밀치기)
+  players.forEach((_, i) => {
+    players.forEach((_, j) => {
+      if (i !== j && !isFinished[i] && !isFinished[j]) {
+        if (Math.abs(positions[i] - positions[j]) < 50) {
+          const push = (positions[i] < positions[j]) ? -1 : 1;
+          positions[i] += push * 2;
+          positions[j] -= push * 2;
         }
-      });
+      }
+    });
+  });
 
-      // 사용자끼리 충돌 튕김
-      runners.forEach((otherRunner, j) => {
-        if (otherRunner === runner) return;
-        const otherLeft = parseFloat(otherRunner.style.left);
-        const otherTop = parseFloat(otherRunner.style.top);
-        if (Math.abs(position - otherLeft) < 40 && Math.abs(laneY - otherTop) < 20) {
-          position += (Math.random() * 40 - 20);
-        }
-      });
-
-      const shake = Math.sin(position / 20) * 10;
-      runner.style.top = `${laneY + shake}px`;
-      runner.style.left = `${Math.min(Math.max(position, 0), endX)}px`;
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        finishOrder.push(player);
-        if (finishOrder.length === players.length) checkWinner();
+  // 이동 계산
+  players.forEach((_, i) => {
+    if (!isFinished[i]) {
+      positions[i] += speeds[i];
+      if (positions[i] >= trackWidth) {
+        positions[i] = trackWidth;
+        isFinished[i] = true;
+        finishOrder.push(players[i]);
       }
     }
 
-    requestAnimationFrame(animate);
+    // 흔들림 표현 (추월감)
+    const shake = Math.sin(positions[i] / 20) * 10;
+    runners[i].style.left = `${positions[i]}px`;
+    runners[i].style.top = `${i * 80 + 20 + shake}px`;
   });
-}
 
-function shuffle(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+  if (finishOrder.length < players.length) {
+    requestAnimationFrame(update);
+  } else {
+    checkWinner();
   }
-  return array;
 }
 
 function checkWinner() {
   const targetRank = parseInt(document.getElementById("winnerRank").value);
   const winnerPlayer = finishOrder[targetRank - 1];
   if (winnerPlayer) {
-    document.getElementById("winner").innerText = `🎯 ${targetRank}님 홀!랑!홀!랑! ${winnerPlayer.name} 🎉`;
+    document.getElementById("winner").innerText = `🎯 ${targetRank}등 당첨: ${winnerPlayer.name} 🎉`;
     fireConfetti();
   } else {
     document.getElementById("winner").innerText = `⚠ 참가자가 부족합니다`;

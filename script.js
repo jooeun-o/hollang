@@ -30,14 +30,8 @@ function renderPlayers() {
     img.src = `assets/runner${imgNum}.png`;
 
     img.onerror = () => {
-      // 이미지 못 불러오면 기본 원형 색상 적용
       div.innerHTML = player.name[0];
       div.style.backgroundColor = (index % 2 === 0) ? '#ff6f61' : '#4fc3f7';
-      div.style.color = 'white';
-      div.style.fontWeight = 'bold';
-      div.style.fontSize = '20px';
-      div.style.textAlign = 'center';
-      div.style.lineHeight = '60px';
     };
 
     div.appendChild(img);
@@ -49,14 +43,14 @@ function renderPlayers() {
 function spawnObstacles() {
   obstacles = [];
   const track = document.getElementById("track");
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     const x = 150 + Math.random() * 600;
-    const y = 20 + i * 70;
+    const y = 20 + i * 50;
     const obs = document.createElement("div");
     obs.className = "obstacle";
     obs.style.left = `${x}px`;
     obs.style.top = `${y}px`;
-    
+
     const img = document.createElement("img");
     img.src = "assets/obstacle.png";
     img.onerror = () => {
@@ -66,7 +60,7 @@ function spawnObstacles() {
     img.style.width = '100%';
     img.style.height = '100%';
     obs.appendChild(img);
-    
+
     track.appendChild(obs);
     obstacles.push({ x, y });
   }
@@ -87,7 +81,7 @@ function startGame() {
 
   shuffled.forEach((player, i) => {
     const runner = runners[players.findIndex(p => p.name === player.name)];
-    const delay = 8000 + i * 1000 + Math.random() * 3000;
+    const delay = 30000 + i * 1000 + Math.random() * 3000;  // 총 약 30초
     const duration = delay;
 
     const startTime = performance.now();
@@ -101,8 +95,8 @@ function startGame() {
       let position = startX + (endX * progress);
 
       obstacles.forEach(obs => {
-        if (Math.abs(position - obs.x) < 20 && Math.abs(laneY - obs.y) < 30) {
-          position -= 1;
+        if (Math.abs(position - obs.x) < 25 && Math.abs(laneY - obs.y) < 30) {
+          position -= 3;  // 핀볼처럼 튕기기
         }
       });
 
@@ -114,7 +108,7 @@ function startGame() {
         requestAnimationFrame(animate);
       } else {
         finishOrder.push(player);
-        checkWinner();
+        if (finishOrder.length === players.length) checkWinner();
       }
     }
 
@@ -132,14 +126,12 @@ function shuffle(array) {
 
 function checkWinner() {
   const targetRank = parseInt(document.getElementById("winnerRank").value);
-  if (finishOrder.length === players.length) {
-    const winnerPlayer = finishOrder[targetRank - 1];
-    if (winnerPlayer) {
-      document.getElementById("winner").innerText = `🎯 ${targetRank}등 당첨: ${winnerPlayer.name} 🎉`;
-      fireConfetti();
-    } else {
-      document.getElementById("winner").innerText = `⚠ 참가자가 부족합니다`;
-    }
+  const winnerPlayer = finishOrder[targetRank - 1];
+  if (winnerPlayer) {
+    document.getElementById("winner").innerText = `🎯 ${targetRank}등 당첨: ${winnerPlayer.name} 🎉`;
+    fireConfetti();
+  } else {
+    document.getElementById("winner").innerText = `⚠ 참가자가 부족합니다`;
   }
 }
 

@@ -1,6 +1,7 @@
 let players = [];
 let runners = [];
-let positions = [];
+let positionsY = [];
+let positionsX = [];
 let speeds = [];
 let finishOrder = [];
 let isFinished = [];
@@ -24,7 +25,7 @@ function renderPlayers() {
   players.forEach((player, index) => {
     const div = document.createElement("div");
     div.className = "runner";
-    div.style.top = `${index * 80 + 20}px`;
+    div.style.left = `170px`; // 중앙으로 고정
     div.innerText = player.name.slice(0, 3);
     div.style.backgroundColor = (index % 2 === 0) ? '#ff6f61' : '#4fc3f7';
     track.appendChild(div);
@@ -42,7 +43,8 @@ function startGame() {
   renderPlayers();
 
   const totalPlayers = players.length;
-  positions = new Array(totalPlayers).fill(0);
+  positionsY = new Array(totalPlayers).fill(0);
+  positionsX = new Array(totalPlayers).fill(170);
   speeds = new Array(totalPlayers).fill(1);
   isFinished = new Array(totalPlayers).fill(false);
   finishOrder = [];
@@ -51,10 +53,9 @@ function startGame() {
 }
 
 function update() {
-  const endX = 840;
-  const trackWidth = 840;
+  const trackHeight = 840;
 
-  // 속도 랜덤 가감 (가속, 감속)
+  // 속도 변화
   players.forEach((_, i) => {
     if (!isFinished[i]) {
       speeds[i] += (Math.random() * 0.1 - 0.05);
@@ -62,34 +63,34 @@ function update() {
     }
   });
 
-  // 충돌 판정 (플레이어 간 밀치기)
+  // 밀침 판정 (좌우 충돌)
   players.forEach((_, i) => {
     players.forEach((_, j) => {
       if (i !== j && !isFinished[i] && !isFinished[j]) {
-        if (Math.abs(positions[i] - positions[j]) < 50) {
-          const push = (positions[i] < positions[j]) ? -1 : 1;
-          positions[i] += push * 2;
-          positions[j] -= push * 2;
+        const dx = positionsX[i] - positionsX[j];
+        const dy = positionsY[i] - positionsY[j];
+        if (Math.abs(dy) < 50 && Math.abs(dx) < 50) {
+          const push = (dx < 0) ? -1 : 1;
+          positionsX[i] += push * 2;
+          positionsX[j] -= push * 2;
         }
       }
     });
   });
 
-  // 이동 계산
+  // 이동 및 종료판정
   players.forEach((_, i) => {
     if (!isFinished[i]) {
-      positions[i] += speeds[i];
-      if (positions[i] >= trackWidth) {
-        positions[i] = trackWidth;
+      positionsY[i] += speeds[i];
+      if (positionsY[i] >= trackHeight) {
+        positionsY[i] = trackHeight;
         isFinished[i] = true;
         finishOrder.push(players[i]);
       }
     }
 
-    // 흔들림 표현 (추월감)
-    const shake = Math.sin(positions[i] / 20) * 10;
-    runners[i].style.left = `${positions[i]}px`;
-    runners[i].style.top = `${i * 80 + 20 + shake}px`;
+    runners[i].style.top = `${positionsY[i]}px`;
+    runners[i].style.left = `${positionsX[i]}px`;
   });
 
   if (finishOrder.length < players.length) {

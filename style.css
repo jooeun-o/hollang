@@ -1,0 +1,68 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 30px;
+  background: #f0f0f0;
+}
+
+h1 {
+  color: #333;
+}
+
+#players {
+  margin-bottom: 20px;
+}
+
+#nameInput {
+  padding: 8px 12px;
+  font-size: 16px;
+}
+
+#addBtn, #startBtn {
+  padding: 8px 20px;
+  font-size: 16px;
+  margin-left: 5px;
+  cursor: pointer;
+}
+
+#track {
+  position: relative;
+  width: 800px;
+  height: 400px;
+  margin: 20px auto;
+  border: 3px solid #333;
+  border-radius: 10px;
+  background: linear-gradient(#fff, #ddd);
+  overflow: hidden;
+}
+
+.runner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 60px;
+  font-weight: bold;
+  font-size: 20px;
+  color: white;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+  transition: left 0.1s linear;
+}
+
+.runner:nth-child(odd) {
+  background-color: #ff6f61;
+}
+
+.runner:nth-child(even) {
+  background-color: #4fc3f7;
+}
+
+#winner {
+  font-weight: bold;
+  font-size: 26px;
+  color: green;
+  margin-top: 20px;
+}
